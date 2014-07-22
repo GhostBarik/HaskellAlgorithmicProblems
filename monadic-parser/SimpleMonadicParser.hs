@@ -16,7 +16,6 @@ newtype Parser a = Parser ( String->[(a, String)] )
 parse :: Parser a -> (String -> [(a, String)])
 parse (Parser f) = f
 
-
 -- declaring our Parser type as instance of monad typeclass
 -- allows us to use beautiful and concise "do-syntax"
 -- for combining 2 or more different parsers into one
@@ -37,8 +36,6 @@ instance Monad (Parser) where
     --                             b <- parse (f a) str'
     --                             return b 
 
-
-
 -- our parser also act as monoid - we can combine results
 -- from 2 or more parser into single one (same as '*' or '+' on natural numbers,
 -- for example), and there is also so-called ZERO-element (FAIL-parser, 
@@ -58,9 +55,7 @@ instance MonadPlus (Parser) where
 
 
 
-
 -- ******** BASIC PARSERS **********
-
 
 -- parse any char
 -- this parser reads sinlge character from given input string
@@ -105,7 +100,6 @@ testSmall = do
 -- a+aa == aa + a
 -- (a+b)*b ==> FAILL!!!
 
-
 -- parse specific string
 string :: String -> Parser String
 string []     = return []
@@ -126,9 +120,7 @@ empty = Parser $ \str -> case str of
                           [] -> [((),str)] -- return empty result
 
 
-
 -- ******** BASIC PARSER COMBINATORS **********
-
 
 
 -- deterministic choice combinator
@@ -163,7 +155,6 @@ safeMany p = do {a  <- p;
 --                xs <- safeMany p;
 --                return (x:xs)}
 
-
 -- almost the same as `many`
 -- this is equal to '+' quantifier used in regular expressions
 many1 :: Parser a -> Parser [a]
@@ -177,23 +168,12 @@ many1 p = do
            -- it should be at least 1
 
 
-
 -- apply given parer 'p' zero or one time
 zeroOne :: Parser a -> Parser [a]
 zeroOne p = do {res <- p; 
                 return [res]}
 
-            +++ (return [])
-
-
-
-
-
-
-
-
-              
-
+            +++ (return [])              
 
 -- construct recursive chain of parsers p1 and p2
 -- (((p1) p2 p1) p2 p1) ..... (at he beginning, apply p1 parser first ,
@@ -208,9 +188,6 @@ zeroOne p = do {res <- p;
 -- the expression looking like this: 2+1+3+6+1+...
 --chain1 :: Parser a -> Parser b -> Parser c
 --chain1 p1 p2 = p1 +++ {do a <- p2;}
-
-
-
 
 
 
@@ -234,9 +211,7 @@ zeroOne p = do {res <- p;
 -- SIMPLE_REG    = 'a' | 'b' | 'c' | ... | 'z'
 
 
-
 -- START_REG     = BASE_REG 'end_of_string'
-
 startReg :: Parser String
 startReg = do           
              res <- baseReg
@@ -248,22 +223,20 @@ startReg = do
 -- compatible with our grammar as we defined it 
 
 
-
 -- BASE_REG      = COMPOUND_REG'+'BASE_REG{1,0}
-
 baseReg :: Parser String
 baseReg = do 
             cmp <- compoundReg
             plus <- plusReg
 
             case plus of 
+
                   [x] -> return (cmp++x++"<!>")
                   []  -> return (cmp)
 
 
 
 -- '+'BASE_REG{1,0}
-
 -- returns either single result [String] or empty []
 plusReg :: Parser [String]
 plusReg = zeroOne (do a <- char '+'
@@ -271,49 +244,40 @@ plusReg = zeroOne (do a <- char '+'
                       return ([a]++b))
 
 
-
 -- COMPOUND_REG = BRACES_REG COMPOUND_REG{1,0} | CONCAT_REG COMPOUND_REG{1,0}
-
 -- the reg. expression can be bounde by braces with qualifier at the end
 compoundReg :: Parser String
 compoundReg = do 
                {a <- bracesReg baseReg;   -- or it could be compound reg. expression, composed from others reg. expr.
                 zo <- zeroOne compoundReg; -- recursivaly parse the compound expression 
-
                 case zo of 
                   [x] -> return (a++x) -- save parsed result string
                   [] -> return (a)}  
-
               +++
-
               do 
                 {a <- concatReg;   -- or it could be compound reg. expression, composed from others reg. expr.
                  b <- compoundReg; -- recursivaly parse the compound expression 
                  return (a++b)}     -- save parsed result string
-
               +++ 
               do {concatReg} -- or it could be simple sequence of regular symbols
 
 
-
 -- CONCAT_REG    = SIMPLE_REG+
-
 concatReg :: Parser String
 concatReg = many1 simpleReg       -- CONCAT_REG = xxxx.... sequence of elementary chars , length >= 1
 
--- SIMPLE_REG    = 'a' | 'b' | 'c' | ...
 
+-- SIMPLE_REG    = 'a' | 'b' | 'c' | ...
 simpleReg :: Parser Char
 simpleReg = rangeChar ['a'..'z']
 
--- QUANTIFICATOR = '+' | '*'
 
+-- QUANTIFICATOR = '+' | '*'
 quantifier :: Parser Char
 quantifier  = char '+' +++ char '*'
 
 
 -- BRACES_REG    = '(' BASE_REG ')' QUANTIFICATOR
-
 bracesReg :: Parser String -> Parser String
 bracesReg reg = do
                  st  <- char '(' -- check left bracket
@@ -324,13 +288,7 @@ bracesReg reg = do
 
 
 
-
-
-
 -- ******** META PARSER COMBINATORS  **********
-
-
-
 
 -- TEST
 metaSimpleReg :: Parser (Parser Char)
@@ -339,13 +297,10 @@ metaSimpleReg = do
                  return (char c) -- <- create parser that consumes one char. of value 'c'
 
 
-
 metaConcatReg :: Parser (Parser String)
 metaConcatReg = do
                  str <- many1 simpleReg
                  return (string str) -- < create parser that consumes string of value 'str'
-
-
 
 
 metaStartReg :: Parser (Parser String)
@@ -369,12 +324,10 @@ metaBaseReg = do
                  []     -> return (parseCmp)
 
 
-
 metaPlusReg :: Parser [Parser String]
 metaPlusReg = zeroOne (do a <- char '+'
                           parserBase <- metaBaseReg
                           return parserBase)
-
 
 
 metaCompoundReg :: Parser (Parser String)
@@ -403,7 +356,6 @@ metaCompoundReg =
                     return parseConc
 
 
-
 metaBracesReg :: Parser (Parser String)
 metaBracesReg = do
               st  <- char '(' -- 
@@ -421,19 +373,7 @@ metaBracesReg = do
                             a <- many1 parseExpr
                             return (concat a) )
 
-
-
-
-                    
-
-
-
-
-
-
 ---- *****************************************************************************************
-
-
 
 --testParser1 = string "abc"
 --testParser2 = char '2'
@@ -456,7 +396,6 @@ main = do
          --   [] -> putStrLn "invalid regular expression pattern..." 
          --   [(p,_)] -> print $ parse p "petyacc"
          --   _ -> putStrLn "More parsers have been returned... WTF??"  
-
 
          --stop <- getCurrentTime
          --print $ diffUTCTime stop start
