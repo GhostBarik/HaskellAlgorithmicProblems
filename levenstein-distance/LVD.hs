@@ -42,7 +42,7 @@ lvd s1@(x1:xs1) s2@(x2:xs2) =
 
 -- memoized (faster) version of the previous recursive algorithm
 -- (but consume much more memory), uses Memo monad from Control.Monad.Memo
-memoLvd :: (MonadMemo (String, String) Int m) => (String, String) -> m Int
+memoLvd :: (String, String) -> Memo (String, String) Int Int
 memoLvd ([],s2) = return $ length s2
 memoLvd (s1,[]) = return $ length s1
 memoLvd (s1@(x1:xs1), s2@(x2:xs2)) = do
