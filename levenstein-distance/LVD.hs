@@ -66,10 +66,10 @@ lvdTable str1 str2 = rows !! l2 !! l1
 
         -- list of rows defined using corecursion (self-referencing), i.e
         -- each row (but first) is defined in terms of the previous one
-        rows = startColumn : zipWith3 apply3 (map makeNextColumn rows)
+        rows = startColumn : zipWith3 apply2 (map makeNextColumn rows)
                                              (tail startRow)
                                              str2
-        apply3 f a b = f a b
+        apply2 f a b = f a b
         min3 a b c = min (min a b) c
         minIf a b c cond = min3 (a + 1) (b + 1) 
                                 (if cond then c else c + 1)
